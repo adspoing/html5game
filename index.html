@@ -5,13 +5,64 @@
 	<script type="text/javascript" src="jquery-1.7.2.min.js"></script>
 	<script type="text/javascript" src="game.js"></script>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<link rel="Stylesheet" type="text/css" href="loginDialog.css" />
 
 </head>
 <body>
+  <a href="#" id="example">登录账号</a>
+	
+    <div id="LoginBox">
+        <div class="row1">
+            登陆<a href="javascript:void(0)" title="关闭窗口" class="close_btn" id="closeBtn">×</a>
+        </div>
+        <div class="row">
+            用户名: <span class="inputBox">
+                <input type="text" id="txtName" placeholder="账号/邮箱" />
+            </span><a href="javascript:void(0)" title="提示" class="warning" id="warn">*</a>
+        </div>
+        <div class="row">
+            <a href="#" id="loginbtn">登录</a>
+        </div>
+    </div>
+
+	<script type="text/javascript">
+	$(function ($) {
+		//弹出登录
+		$("#example").hover(function () {
+			$(this).stop().animate({
+				opacity: '1'
+			}, 600);
+		}, function () {
+			$(this).stop().animate({
+				opacity: '0.6'
+			}, 1000);
+		}).on('click', function () {
+			$("body").append("<div id='mask'></div>");
+			$("#mask").addClass("mask").fadeIn("slow");
+			$("#LoginBox").fadeIn("slow");
+		});
+		//按钮的透明度
+		$("#loginbtn").hover(function () {
+			$(this).stop().animate({
+				opacity: '1'
+			}, 600);
+		}, function () {
+			$(this).stop().animate({
+				opacity: '0.8'
+			}, 1000);
+		});
+		//关闭
+		$(".close_btn").hover(function () { $(this).css({ color: 'black' }) }, function () { $(this).css({ color: '#999' }) }).on('click', function () {
+			$("#LoginBox").fadeOut("fast");
+			$("#mask").css({ display: 'none' });
+		});
+	});
+	</script>	
+<!-- <div style="text-align:center;">
+</div> -->
 	<div id="header">
 		<div id="settings">
-			<input type="text" id="name">
-			<select id="pony">
+			<select id="people">
 				<option value="0">吕布</option>
 				<option value="1">赵云</option>
 				<option value="2">诸葛亮</option>
@@ -32,6 +83,9 @@
 		<div id="sidebar">
 			<div class="title">Players</div>
 			<div id="players"></div>
+		    <div class="title">Rank</div>
+
 		</div>
+		<p>Copyright © 2016 BS course ZJU_HCW. All Rights Reserved</p>
 <body>
 </html>

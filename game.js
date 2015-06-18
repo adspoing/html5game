@@ -1,4 +1,3 @@
-/* helper */
 window.requestAnimFrame = (function(){
       return  window.requestAnimationFrame       || 
               window.webkitRequestAnimationFrame || 
@@ -11,7 +10,7 @@ window.requestAnimFrame = (function(){
     })();
 
 /* game */
-var socket, canvas, ctx, sprites, blocks, muffin,chunqiu,
+var socket, canvas, ctx, sprites, blocks, pao,chunqiu,
 	width = 650,
 	height = 640,
 	players = {},
@@ -190,28 +189,28 @@ function render() {
 		}
 	}
 	
-	// "3d" part of walls
-	for (var i = 0; i < map.length; i++) {
-		for (var j = 0; j < map[i].length; j++) {
-			if (map[i][j] == 1 || map[i][j] == 2) {
-				ctx.drawImage(blocks, 100 - map[i][j] * 50, 50, 50, 19, j * 50, i * 50 + 40, 50, 19);
-			}
-		}
-	}
+	// // "3d" part of walls
+	// for (var i = 0; i < map.length; i++) {
+	// 	for (var j = 0; j < map[i].length; j++) {
+	// 		if (map[i][j] == 1 || map[i][j] == 2) {
+	// 			ctx.drawImage(blocks, 100 - map[i][j] * 50, 50, 50, 19, j * 50, i * 50 + 40, 50, 19);
+	// 		}
+	// 	}
+	// }
 	
 	// bombs
 	for (var id in bombs) {
 		var b = bombs[id];
-		ctx.drawImage(muffin, b.x * 50 + 5, b.y * 50 - 5);
+		ctx.drawImage(pao, b.x * 50 + 5, b.y * 50 - 5);
 	}
 	
 	// players
 	for (var id in players) if (players[id].playing) {
 		var p = players[id], pl = players_local[id];
-		ctx.drawImage(sprites, ((p.pony % 4) * 3 + pl.spriteX) * 48, (Math.floor(p.pony / 4) * 4 + p.spriteY) * 64, 48, 64, p.x , p.y - 20, 48, 64);
+		ctx.drawImage(sprites, ((p.people % 4) * 3 + pl.spriteX) * 48, (Math.floor(p.people / 4) * 4 + p.spriteY) * 64, 48, 64, p.x , p.y - 20, 48, 64);
 	}
 	
-	// walls, muffins and powerups
+	// walls, bombs and powerups
 	for (var i = 0; i < map.length; i++) {
 		for (var j = 0; j < map[i].length; j++) {
 			if (map[i][j] == 1 || map[i][j] == 2) {
@@ -250,7 +249,7 @@ function main(timestamp) {
 	}
 	requestAnimFrame(main);
 }
-
+//load objs
 var fileref = document.createElement('script');
 fileref.setAttribute('type', 'text/javascript');
 fileref.setAttribute('src', 'http://' + window.location.hostname + ':1380/socket.io/socket.io.js');
@@ -261,11 +260,11 @@ fileref.onload = function() {
 		ctx = canvas.getContext('2d');
 	
 		sprites = new Image();
-		sprites.src = 'people.png';//modify
+		sprites.src = 'people.png';
 		blocks = new Image();
 		blocks.src = 'wall.png';
-		muffin = new Image();
-		muffin.src = 'bomb.png';
+		pao = new Image();
+		pao.src = 'bomb.png';
 		chunqiu = new Image();
 		chunqiu.src="chunqiu.png";
 		jineng= new Image();
@@ -290,7 +289,7 @@ fileref.onload = function() {
 			}
 		
 			$('#name').val(data.name);
-			$('#pony').val(data.pony);
+			$('#people').val(data.people);
 		
 			requestAnimFrame(main);
 		});
@@ -313,9 +312,16 @@ fileref.onload = function() {
 			delete players[data.id];
 			delete players_local[data.id];
 		});
-		socket.on('rename', function(data) {
+		socket.on('reshape', function(data) {
+			//$('#user-' + data.id).html(data.name);
+			players[data.id].people = data.people;
+		});
+		socket.on('hello2', function(data) {
+
 			$('#user-' + data.id).html(data.name);
-			players[data.id].pony = data.pony;
+		    $('#closeBtn').click();
+
+			// players[data.id].people = data.people;
 		});
 
 		$(document).keydown(function(e) {
@@ -334,13 +340,15 @@ fileref.onload = function() {
 				socket.emit('move', players[myid]);
 			}
 		});
-	
-		function rename() {
-			socket.emit('rename', {name: $('#name').val(), pony: $('#pony').val()});
+		function reshape() {
+			socket.emit('reshape', {people: $('#people').val()});
 		}
-		$('#name').change(rename);
-		$('#pony').change(rename);
-	
+		function submmit()
+		{
+			socket.emit('hello2',{account:$('#txtName').val()});
+		}
+		$('#people').change(reshape);
+	    $('#loginbtn').click(submmit);
 		// position update
 		socket.on('move', function(data) {
 			if (data.id != myid) {
@@ -349,18 +357,19 @@ fileref.onload = function() {
 				players[data.id].playing = data.data.playing;
 			}
 		});
-	
+
+
 		// map update
 		socket.on('map', function(data) {
 			map = data;
 		});
-	
+	    
 		// flame update
 		socket.on('flame', function(data) {
 			players[data.id].flame = data.flame;
 		});
 	
-	// bobs update
+	    // number of bombs update
 		socket.on('bobs', function(data) {
 			players[data.id].bobs = data.bobs;
 		});

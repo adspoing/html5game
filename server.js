@@ -2,20 +2,31 @@ var connect = require('connect');
 var serveStatic = require('serve-static');
 connect().use(serveStatic(__dirname)).listen(8080);
 var io = require('socket.io').listen(1380);
+var mongoose = require('mongoose');    //引用mongoose模块
+var db=mongoose.createConnection('localhost','test');
+var users = db.model('User', { name: String,password:String,kill:Number,rank:Number});
 
-var sockets = {}, players = {}, bombs = {}, nextId = 1, nextBombId = 1, totalPlayers = 0, alivePlayers = 0, timeleft = 0,bobs=1,nowBomb=0;
+var sockets = {}, 
+    players = {}, 
+    bombs = {}, 
+    nextId = 1, 
+    nextBombId = 1, 
+    totalPlayers = 0, 
+    alivePlayers = 0, 
+    timeleft = 0,
+    bobs=1,
+    nowBomb=0;
 
-/*
-* 0 - empty
-* 1 - destroyable wall
-* 2 - wall
-* template special:
-*   -1 - must be empty
-* map special:
-*   -2 - explosion
-*   -3 - flame++
-*   -4 - bomb++
-*   100 - muffin (bomb)
+/*map info
+  0 - empty
+  1 - wall can bomb
+  2 - wall
+  -1 - must be empty
+ map special:
+   -2 - explosion
+   -3 - flame++
+   -4 - bomb++
+   100 - bomb
 */
 var map, map_template = [
 		[-1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1],
@@ -154,7 +165,7 @@ function update(timestamp) {
 	}
 }
 
-// send message to everypony in the room
+// send message to every player in the room
 function toRoom(event, data) {
 	for(var id in sockets) {
 		sockets[id].emit(event, data);
@@ -169,7 +180,7 @@ function checkAlive() {
 	}
 }
 
-// boom goes the muffin
+// bomb boom 
 function boom(bid, chain) {
 	if (!bombs[bid]) return [];
 	map[bombs[bid].y][bombs[bid].x] = 0;
@@ -315,12 +326,13 @@ function newGame() {
 newGame();
 
 io.sockets.on('connection', function(socket) {
-	var id = nextId++, name = 'Anon ' + id;
-	var pony = Math.floor(Math.random() * 8);
+	var id = nextId++, name = 'test ' + id;
+	var people = Math.floor(Math.random() * 8);
 	totalPlayers++;
-	
-	socket.emit('hello', {id: id, name: name, players: players, bombs: bombs, map: map, pony: pony, timeleft: timeleft});
-	players[id] = {name: name, playing: false, pony: pony, x: 0, y: 0, keys: [false, false, false, false], spriteY: 2, flame: 1,bobs:1};
+
+
+	socket.emit('hello', {id: id, name: name, players: players, bombs: bombs, map: map, people: people, timeleft: timeleft});
+	players[id] = {name: name, playing: false, people: people, x: 0, y: 0, keys: [false, false, false, false], spriteY: 2, flame: 1,bobs:1};
 	sockets[id] = socket;
 	toRoom('joined', {id: id, data: players[id]});
 	
@@ -331,12 +343,36 @@ io.sockets.on('connection', function(socket) {
 			players[id].timestamp = Date.now();
 		}
 	});
-	
+
+	socket.on('hello2',function(data)
+	{
+		var aa=new users({name:data.account,kill:'0',rank:'0'});
+		//console.log(aa.name);
+		aa.save(function(err)
+		{
+			if(err)
+				console.log(err);
+			else
+				console.log("success");
+		});
+	     toRoom('hello2', {id: id, name: data.account});
+	     			     console.log("aa");
+
+
+	});
+    //var aa=new users({name:'test2',password:'123',kill:"3",rank:"2"});
+ 
+//    aa.save();
+  //  users.find({ name: 'test2' }, function (err) {
+  //if (err) return handleError(err);
+  // removed!
+  //else console.log();
+//});
 	socket.on('plant', function(data) {
 		//var id =  nextBombId++;
 		var idd=nextBombId++;
-		console.log(id);
-		console.log(idd);
+		//console.log(id);
+		//console.log(idd);
 		nowBomb++;
 		if(nowBomb<=players[id].bobs){
 		bombs[idd] = data;
@@ -363,11 +399,11 @@ io.sockets.on('connection', function(socket) {
 		    toRoom('map', map);
 	});
 	
-	socket.on('rename', function(data) {
-		players[id].pony = data.pony
-		players[id].name = data.name;
-		toRoom('rename', {id: id, name: data.name, pony: data.pony});
+	socket.on('reshape', function(data) {
+		players[id].people = data.people;
+		toRoom('reshape', {id: id, people: data.people});
 	});
+
 	
 	socket.on('disconnect', function() {
 		totalPlayers--;
