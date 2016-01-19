@@ -1,17 +1,17 @@
 #header {
-	background: url('head.png') no-repeat;
+	background: url('/img/head.png') no-repeat;
 	height: 63px;
 	padding: 25px 0 0 110px;
 	font-weight: bold;
-	font-size: 24px;
-	font-family: verdana, sans-serif;
+	font-size: 30px;
+font-family:"Times New Roman",Georgia,Serif;
 	width: 743px;
 	margin: 0 auto;
 }
 
 #timer {
 	float: right;
-	margin-right: 200px;
+	margin-right: 300px;
 }
 
 #settings {

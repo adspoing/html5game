@@ -7,7 +7,7 @@ var db=mongoose.createConnection('localhost','test');
 var users = db.model('User', { name: String,password:String,kill:Number,rank:Number});
 
 var sockets = {}, 
-    players = {}, 
+    players ={},
     bombs = {}, 
     nextId = 1, 
     nextBombId = 1, 
@@ -15,19 +15,12 @@ var sockets = {},
     alivePlayers = 0, 
     timeleft = 0,
     bobs=1,
-    nowBomb=0;
+    nowBomb=0,
+    naame={};
 
-/*map info
-  0 - empty
-  1 - wall can bomb
-  2 - wall
-  -1 - must be empty
- map special:
-   -2 - explosion
-   -3 - flame++
-   -4 - bomb++
-   100 - bomb
-*/
+// 0 - empty  1 - wall can bomb  2- must be wall  -1 -must be empty  
+// -2 flame  -3 chunqiu flame++ -4 yumaoshan bomb ++
+//100 bomb
 var map, map_template = [
 		[-1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1],
 		[-1, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1],
@@ -82,7 +75,7 @@ function update(timestamp) {
 			var rposx = Math.floor((p.x + 25) / 50);
 			var rposy = Math.floor((p.y + 25) / 50);
 			var rposi = map[rposy][rposx];
-			// ignore muffin if player is standing on it
+			// ignore bomb if player is standing on it
 			if (rposi == 100) {
 				map[rposy][rposx] = 0;
 			}
@@ -165,14 +158,14 @@ function update(timestamp) {
 	}
 }
 
-// send message to every player in the room
+//broadcast the msg
 function toRoom(event, data) {
 	for(var id in sockets) {
 		sockets[id].emit(event, data);
 	}
 }
 
-// check if game should be restarted
+//check the hero is alive or the game should be restarted
 function checkAlive() {
 	if (alivePlayers < 2 && alivePlayers != totalPlayers && !starting) {
 		starting = true;
@@ -234,6 +227,23 @@ function boom(bid, chain) {
 					if (p[j].type == 'b') {
 						explode.push(p[j].id);
 					} else if (p[j].type == 'p') {
+						console.log(naame[p[j].id]);
+						 // users.update({name:naame[p[j].id]},{'$inc':{kill:1}});
+						     users.update({name:naame[p[j].id]},{'$inc':{kill:1}},function(err){});
+						 var a;
+						users.find({'name':naame[p[j].id]},function(error,result)
+						{
+							if(error)
+								console.log(error);
+							else
+								{console.log(result);
+								  //   a=result[0].kill+1;
+    						// 		users.update({'name':result[0].name}, {'$set': { 'kill':  result[0].kill+1}});
+								  // console.log(a);
+								}
+						})
+						  // users.update({'name':naame[p[j].id]}, { $set: { kill: a }});
+
 						players[p[j].id].playing = false;
 						alivePlayers--;
 						toRoom('move', {id: p[j].id, data: players[p[j].id]});
@@ -326,23 +336,35 @@ function newGame() {
 newGame();
 
 io.sockets.on('connection', function(socket) {
-	var id = nextId++, name = 'test ' + id;
+	var id = nextId++, names = 'test ' + id;
+
 	var people = Math.floor(Math.random() * 8);
 	totalPlayers++;
 
 
-	socket.emit('hello', {id: id, name: name, players: players, bombs: bombs, map: map, people: people, timeleft: timeleft});
-	players[id] = {name: name, playing: false, people: people, x: 0, y: 0, keys: [false, false, false, false], spriteY: 2, flame: 1,bobs:1};
+	socket.emit('hello', {id: id, name: names, players: players, bombs: bombs, map: map, people: people, timeleft: timeleft});
+	players[id] = {name: names, playing: false, people: people, x: 0, y: 0, keys: [false, false, false, false], spriteY: 2, flame: 1,bobs:1,kill:0};
 	sockets[id] = socket;
 	toRoom('joined', {id: id, data: players[id]});
-	
+	// console.log("connect "+players[id].name);
+
+
+
 	socket.on('move', function(data) {
 		if (players[id].playing) {
 			players[id] = data;
 			toRoom('move', {id: id, data: data});
 			players[id].timestamp = Date.now();
+				     console.log("id"+id+"'s name  "+naame[id]);
+
+			users.find().sort({'kill':-1}).exec(function(err,posts){
+                           	socket.emit('rank',{post:posts});
+                           //	console.log(posts);
+                           });
+                          
 		}
 	});
+
 
 	socket.on('hello2',function(data)
 	{
@@ -356,12 +378,14 @@ io.sockets.on('connection', function(socket) {
 				console.log("success");
 		});
 	     toRoom('hello2', {id: id, name: data.account});
-	     			     console.log("aa");
-
+	     			     // console.log("aa");
+	      players[id].name=data.account;
+	     // console.log(id);
+	      naame[id]=data.account;
+	     console.log("id"+id+"'s name  "+naame[id]);
 
 	});
     //var aa=new users({name:'test2',password:'123',kill:"3",rank:"2"});
- 
 //    aa.save();
   //  users.find({ name: 'test2' }, function (err) {
   //if (err) return handleError(err);
@@ -370,6 +394,10 @@ io.sockets.on('connection', function(socket) {
 //});
 	socket.on('plant', function(data) {
 		//var id =  nextBombId++;
+	   // console.log("connect "+players[id].name);
+	     // console.log("id"+id+"'s name  "+players[id].name);
+	     // console.log("id"+id+"'s name  "+players[id].name);
+
 		var idd=nextBombId++;
 		//console.log(id);
 		//console.log(idd);
@@ -383,6 +411,8 @@ io.sockets.on('connection', function(socket) {
 	});
 	
 	socket.on('pickup', function(data) {
+			     // console.log("id"+id+"'s name  "+players[id].name);
+
 		if (map[data.y][data.x] == -3) {
 			map[data.y][data.x] = 0;
 			players[id].flame++;

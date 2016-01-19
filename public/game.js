@@ -35,7 +35,7 @@ function update(delta) {
 		}
 		var pl = players_local[id];
 	 
-		/* moving */
+     
 		var power = delta /6;
 		if (power == 0) continue;
 		var rmx = 0, rmy = 0;
@@ -146,7 +146,7 @@ function update(delta) {
 			}
 		}
 	
-		/* sprites */
+		// sprites 
 		var nspriteY = -1;
 		if (rmy > 0) {
 			nspriteY = 0;
@@ -188,16 +188,6 @@ function render() {
 			ctx.drawImage(blocks, 100, 0, 50, 50, j * 50, i * 50, 50, 50);
 		}
 	}
-	
-	// // "3d" part of walls
-	// for (var i = 0; i < map.length; i++) {
-	// 	for (var j = 0; j < map[i].length; j++) {
-	// 		if (map[i][j] == 1 || map[i][j] == 2) {
-	// 			ctx.drawImage(blocks, 100 - map[i][j] * 50, 50, 50, 19, j * 50, i * 50 + 40, 50, 19);
-	// 		}
-	// 	}
-	// }
-	
 	// bombs
 	for (var id in bombs) {
 		var b = bombs[id];
@@ -249,7 +239,7 @@ function main(timestamp) {
 	}
 	requestAnimFrame(main);
 }
-//load objs
+//load objects
 var fileref = document.createElement('script');
 fileref.setAttribute('type', 'text/javascript');
 fileref.setAttribute('src', 'http://' + window.location.hostname + ':1380/socket.io/socket.io.js');
@@ -260,17 +250,17 @@ fileref.onload = function() {
 		ctx = canvas.getContext('2d');
 	
 		sprites = new Image();
-		sprites.src = 'people.png';
+		sprites.src = 'img/people.png';
 		blocks = new Image();
-		blocks.src = 'wall.png';
+		blocks.src = 'img/wall.png';
 		pao = new Image();
-		pao.src = 'bomb.png';
+		pao.src = 'img/bomb.png';
 		chunqiu = new Image();
-		chunqiu.src="chunqiu.png";
+		chunqiu.src="img/chunqiu.png";
 		jineng= new Image();
-		jineng.src="jineng.png";
+		jineng.src="img/jineng.png";
 		shan=new Image();
-		shan.src="shan.png";
+		shan.src="img/shan.png";
 
 
 	
@@ -302,7 +292,7 @@ fileref.onload = function() {
 		
 			requestAnimFrame(main);
 		});
-	
+	     //join in 
 		socket.on('joined', function(data) {
 			players[data.id] = data.data;
 			$('#players').append('<div id="user-' + data.id + '" class="list-element">' + data.data.name + '<div>');
@@ -316,6 +306,7 @@ fileref.onload = function() {
 			//$('#user-' + data.id).html(data.name);
 			players[data.id].people = data.people;
 		});
+
 		socket.on('hello2', function(data) {
 
 			$('#user-' + data.id).html(data.name);
@@ -323,7 +314,7 @@ fileref.onload = function() {
 
 			// players[data.id].people = data.people;
 		});
-
+         
 		$(document).keydown(function(e) {
 			if (e.keyCode >= 37 && e.keyCode <= 40 && !players[myid].keys[e.keyCode - 37]) {
 				players[myid].keys[e.keyCode - 37] = true;
@@ -340,9 +331,11 @@ fileref.onload = function() {
 				socket.emit('move', players[myid]);
 			}
 		});
+		//shape update 
 		function reshape() {
 			socket.emit('reshape', {people: $('#people').val()});
 		}
+		//submit name to login 
 		function submmit()
 		{
 			socket.emit('hello2',{account:$('#txtName').val()});
@@ -357,7 +350,15 @@ fileref.onload = function() {
 				players[data.id].playing = data.data.playing;
 			}
 		});
-
+		// show rank 
+        socket.on('rank',function(data)
+        {
+        	var ppost=data.post;
+        	$('#rrand').html('');
+			for (var i=ppost.length-1;i>=0;i--) {
+				$('#rrand').append('<div id="user-' + i + '" class="list-element">' + ppost[i].name + '<div>');
+			}
+        })
 
 		// map update
 		socket.on('map', function(data) {
